@@ -1,0 +1,67 @@
+-- 创建用户注册日志表
+CREATE TABLE UserRegistrationLogs (
+    LogID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID INT NOT NULL,
+    Username VARCHAR(50) NOT NULL,
+    RegisterTime DATETIME NOT NULL,
+    ActionTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 创建AFTER INSERT触发器
+DELIMITER //
+CREATE TRIGGER after_user_insert
+AFTER INSERT ON Users
+FOR EACH ROW
+BEGIN
+    INSERT INTO UserRegistrationLogs (UserID, Username, RegisterTime)
+    VALUES (NEW.UserID, NEW.Username, NEW.RegisterTime);
+END //
+DELIMITER ;
+
+-- 创建车次状态变更审计表
+CREATE TABLE TrainStatusAudit (
+    AuditID INT AUTO_INCREMENT PRIMARY KEY,
+    TrainID VARCHAR(10) NOT NULL,
+    OldStatus BOOLEAN NOT NULL,
+    NewStatus BOOLEAN NOT NULL,
+    ChangeTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ChangedBy VARCHAR(50),
+    FOREIGN KEY (TrainID) REFERENCES Trains(TrainID) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 创建BEFORE UPDATE触发器
+DELIMITER //
+CREATE TRIGGER before_train_update
+BEFORE UPDATE ON Trains
+FOR EACH ROW
+BEGIN
+    IF OLD.IsActive <> NEW.IsActive THEN
+        INSERT INTO TrainStatusAudit (TrainID, OldStatus, NewStatus, ChangedBy)
+        VALUES (OLD.TrainID, OLD.IsActive, NEW.IsActive, CURRENT_USER());
+    END IF;
+END //
+DELIMITER ;
+
+-- 创建已删除订单备份表
+CREATE TABLE DeletedOrdersBackup (
+    BackupID INT AUTO_INCREMENT PRIMARY KEY,
+    OrderID BIGINT NOT NULL,
+    UserID INT NOT NULL,
+    OrderTime DATETIME NOT NULL,
+    TotalAmount DECIMAL(10,2) NOT NULL,
+    STATUS VARCHAR(20) NOT NULL,
+    DeletionTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    DeletedBy VARCHAR(50)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 创建BEFORE DELETE触发器
+DELIMITER //
+CREATE TRIGGER before_order_delete
+BEFORE DELETE ON Orders
+FOR EACH ROW
+BEGIN
+    INSERT INTO DeletedOrdersBackup (OrderID, UserID, OrderTime, TotalAmount, STATUS, DeletedBy)
+    VALUES (OLD.OrderID, OLD.UserID, OLD.OrderTime, OLD.TotalAmount, OLD.STATUS, CURRENT_USER());
+END //
+DELIMITER ;

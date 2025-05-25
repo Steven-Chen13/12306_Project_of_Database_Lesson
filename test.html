@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12306余票查询系统</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #d81e06;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .tab-container {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+            background-color: #f8f8f8;
+        }
+        .tab.active {
+            background-color: white;
+            border-color: #ddd;
+            border-bottom-color: white;
+            color: #d81e06;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .search-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #d81e06;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            align-self: flex-end;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #b71c1c;
+        }
+        button.secondary {
+            background-color: #6c757d;
+        }
+        button.secondary:hover {
+            background-color: #5a6268;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 5px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        .form-row {
+            margin-bottom: 15px;
+        }
+        #network-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        .online {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .offline {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div id="network-status" class="offline">离线</div>
+    <div class="container">
+        <h1>12306余票查询系统</h1>
+        
+        <div class="tab-container">
+            <div class="tab active" data-tab="query">余票查询</div>
+            <div class="tab" data-tab="orders">我的订单</div>
+        </div>
+        
+        <!-- 余票查询标签页 -->
+        <div id="query-tab" class="tab-content active">
+            <div class="search-form">
+                <div class="form-group">
+                    <label for="from-station">出发站</label>
+                    <select id="from-station">
+                        <option value="">请选择出发站</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="to-station">到达站</label>
+                    <select id="to-station">
+                        <option value="">请选择到达站</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="depart-date">出发日期</label>
+                    <input type="date" id="depart-date">
+                </div>
+                
+                <button id="search-btn">查询余票</button>
+            </div>
+            
+            <div id="error-message" class="message error" style="display: none;"></div>
+            <div id="success-message" class="message success" style="display: none;"></div>
+            
+            <div id="loading" class="loading">
+                <p>正在查询中，请稍候...</p>
+            </div>
+            
+            <div class="results">
+                <h2>查询结果</h2>
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th>车次</th>
+                            <th>出发日期</th>
+                            <th>座位类型</th>
+                            <th>出发时间</th>
+                            <th>到达时间</th>
+                            <th>余票数量</th>
+                            <th>价格(元)</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        <!-- 结果将通过JavaScript动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 我的订单标签页 -->
+        <div id="orders-tab" class="tab-content">
+            <div class="search-form">
+                <div class="form-group">
+                    <label for="user-id">用户ID</label>
+                    <input type="number" id="user-id" placeholder="输入用户ID">
+                </div>
+                
+                <button id="search-orders-btn">查询订单</button>
+            </div>
+            
+            <div id="orders-error-message" class="message error" style="display: none;"></div>
+            <div id="orders-success-message" class="message success" style="display: none;"></div>
+            
+            <div id="orders-loading" class="loading">
+                <p>正在查询订单，请稍候...</p>
+            </div>
+            
+            <div class="results">
+                <h2>我的订单</h2>
+                <table id="orders-table">
+                    <thead>
+                        <tr>
+                            <th>订单ID</th>
+                            <th>下单时间</th>
+                            <th>车次</th>
+                            <th>出发日期</th>
+                            <th>座位类型</th>
+                            <th>数量</th>
+                            <th>总金额</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-body">
+                        <!-- 订单将通过JavaScript动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 订票模态框 -->
+    <div id="book-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>订票信息</h2>
+            <form id="book-form">
+                <input type="hidden" id="book-train-id">
+                <input type="hidden" id="book-depart-date">
+                <input type="hidden" id="book-seat-type-id">
+                
+                <div class="form-row">
+                    <label for="book-user-id">用户ID</label>
+                    <input type="number" id="book-user-id" required>
+                </div>
+                
+                <div class="form-row">
+                    <label for="book-seat-type">座位类型</label>
+                    <input type="text" id="book-seat-type" disabled>
+                </div>
+                
+                <div class="form-row">
+                    <label for="book-ticket-count">购票数量</label>
+                    <input type="number" id="book-ticket-count" min="1" value="1" required>
+                </div>
+                
+                <div class="form-row">
+                    <button type="submit" class="primary">确认订票</button>
+                </div>
+            </form>
+            <div id="book-error-message" class="message error" style="display: none;"></div>
+            <div id="book-success-message" class="message success" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <!-- 改签模态框 -->
+    <div id="change-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>改签信息</h2>
+            <form id="change-form">
+                <input type="hidden" id="change-order-id">
+                
+                <div class="form-row">
+                    <label for="change-from-station">出发站</label>
+                    <select id="change-from-station" required>
+                        <option value="">请选择出发站</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <label for="change-to-station">到达站</label>
+                    <select id="change-to-station" required>
+                        <option value="">请选择到达站</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <label for="change-depart-date">出发日期</label>
+                    <input type="date" id="change-depart-date" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="new-train-select">新车次</label>
+                    <select id="new-train-select" required>
+                        <option value="">请先选择出发站/到达站/日期</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <label for="change-seat-type">座位类型</label>
+                    <select id="change-seat-type" required>
+                        <option value="">请选择座位类型</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <label for="change-ticket-count">票数</label>
+                    <input type="number" id="change-ticket-count" min="1" value="1" required>
+                </div>
+                
+                <div class="form-row">
+                    <button type="submit" class="primary">确认改签</button>
+                </div>
+            </form>
+            <div id="change-error-message" class="message error" style="display: none;"></div>
+            <div id="change-success-message" class="message success" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        const API_BASE_URL = 'http://localhost:5000';
+        let currentUser = null;
+        let seatTypes = [];
+        let stations = [];
+        
+        // DOM元素缓存
+        const dom = {
+            networkStatus: document.getElementById('network-status'),
+            loading: document.getElementById('loading'),
+            ordersLoading: document.getElementById('orders-loading'),
+            errorMessage: document.getElementById('error-message'),
+            successMessage: document.getElementById('success-message'),
+            ordersErrorMessage: document.getElementById('orders-error-message'),
+            ordersSuccessMessage: document.getElementById('orders-success-message'),
+            bookModal: document.getElementById('book-modal'),
+            changeModal: document.getElementById('change-modal'),
+            resultsBody: document.getElementById('results-body'),
+            ordersBody: document.getElementById('orders-body')
+        };
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查网络状态
+            checkNetworkStatus();
+            setInterval(checkNetworkStatus, 30000); // 每30秒检查一次
+            
+            // 初始化标签页切换
+            initTabs();
+            
+            // 初始化模态框
+            initModals();
+            
+            // 获取车站列表和座位类型
+            Promise.all([
+                fetchStations(),
+                fetchSeatTypes()
+            ]).then(() => {
+                // 设置默认日期为明天
+                setDefaultDate();
+            });
+            
+            // 绑定查询按钮事件
+            document.getElementById('search-btn').addEventListener('click', searchTickets);
+            
+            // 绑定订单查询按钮事件
+            document.getElementById('search-orders-btn').addEventListener('click', searchOrders);
+        });
+        
+        // 检查网络状态
+        function checkNetworkStatus() {
+            fetch(`${API_BASE_URL}/api/health`, {
+                method: 'GET',
+                cache: 'no-cache',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(() => {
+                dom.networkStatus.textContent = '在线';
+                dom.networkStatus.className = 'online';
+            })
+            .catch(() => {
+                dom.networkStatus.textContent = '离线';
+                dom.networkStatus.className = 'offline';
+            });
+        }
+        
+        // 初始化标签页切换
+        function initTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 移除所有标签的active类
+                    tabs.forEach(t => t.classList.remove('active'));
+                    // 给当前点击的标签添加active类
+                    this.classList.add('active');
+                    
+                    // 隐藏所有内容
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // 显示对应的内容
+                    const tabId = this.getAttribute('data-tab') + '-tab';
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        }
+        
+        // 获取车站列表
+        function fetchStations() {
+            return fetch(`${API_BASE_URL}/api/stations`)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.data && data.data.length > 0) {
+                        stations = data.data;
+                        updateStationDropdowns();
+                        showMessage('success', '车站列表已更新');
+                    } else {
+                        throw new Error(data.error || '未获取到车站数据');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取车站列表错误:', error);
+                    showMessage('error', '加载车站列表失败: ' + error.message);
+                });
+        }
+        
+        // 更新所有车站下拉菜单
+        function updateStationDropdowns() {
+            const dropdownIds = ['from-station', 'to-station', 'change-from-station', 'change-to-station'];
+            
+            dropdownIds.forEach(id => {
+                const dropdown = document.getElementById(id);
+                if (!dropdown) return;
+                
+                // 保留第一个默认选项
+                const defaultOption = dropdown.options[0];
+                dropdown.innerHTML = '';
+                if (defaultOption) dropdown.appendChild(defaultOption);
+                
+                // 添加车站选项
+                stations.forEach(station => {
+                    const option = new Option(
+                        station.name || station.StationName || station,
+                        station.id || station.StationID || station
+                    );
+                    dropdown.add(option);
+                });
+            });
+        }
+        
+        // 获取座位类型
+        function fetchSeatTypes() {
+            return fetch(`${API_BASE_URL}/api/seat_types`)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        seatTypes = data.data;
+                        updateSeatTypeDropdowns();
+                    } else {
+                        throw new Error(data.error || '获取座位类型失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取座位类型错误:', error);
+                });
+        }
+        
+        // 更新座位类型下拉菜单
+        function updateSeatTypeDropdowns() {
+            const dropdown = document.getElementById('change-seat-type');
+            dropdown.innerHTML = '<option value="">请选择座位类型</option>';
+            
+            seatTypes.forEach(type => {
+                const option = new Option(type.name, type.id);
+                dropdown.add(option);
+            });
+        }
+        
+        // 设置默认日期为明天
+        function setDefaultDate() {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const formattedDate = tomorrow.toISOString().split('T')[0];
+            document.getElementById('depart-date').value = formattedDate;
+            document.getElementById('change-depart-date').value = formattedDate;
+        }
+        
+        // 初始化模态框
+        function initModals() {
+            // 初始化所有模态框
+            const modals = [
+                { id: 'book-modal', formId: 'book-form', submitHandler: createOrder },
+                { id: 'change-modal', formId: 'change-form', submitHandler: changeTicket }
+            ];
+            
+            modals.forEach(modalConfig => {
+                const modal = document.getElementById(modalConfig.id);
+                const closeBtn = modal.querySelector('.close');
+                
+                // 关闭按钮事件
+                closeBtn.onclick = () => modal.style.display = 'none';
+                
+                // 表单提交事件
+                document.getElementById(modalConfig.formId).addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    modalConfig.submitHandler();
+                });
+            });
+            
+            // 改签模态框特殊事件
+            const changeFromStation = document.getElementById('change-from-station');
+            const changeToStation = document.getElementById('change-to-station');
+            const changeDepartDate = document.getElementById('change-depart-date');
+            
+            [changeFromStation, changeToStation, changeDepartDate].forEach(element => {
+                element.addEventListener('change', loadAvailableTrains);
+            });
+            
+            // 新车次选择事件
+            document.getElementById('new-train-select').addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const seatTypeSelect = document.getElementById('change-seat-type');
+                
+                seatTypeSelect.innerHTML = '<option value="">加载座位类型...</option>';
+                
+                if (!selectedOption?.value) {
+                    seatTypeSelect.innerHTML = '<option value="">请先选择车次</option>';
+                    return;
+                }
+                
+                try {
+                    const trainInfo = JSON.parse(selectedOption.dataset.train);
+                    console.log('trainInfo:', trainInfo);
+                    seatTypeSelect.innerHTML = '<option value="">选择座位类型</option>';
+                    
+                    // 座位类型ID映射
+                    const seatTypeMap = {
+                        '商务座': 1,
+                        '一等座': 2,
+                        '二等座': 3
+                    };
+                    
+                    if (trainInfo.seat_types?.length > 0) {
+                        console.log('座位类型列表:', trainInfo.seat_types);
+                        trainInfo.seat_types.forEach(seat => {
+                            console.log('当前座位信息:', seat);
+                            if (seat.available > 0 && seat.type_name) {
+                                // 使用映射获取座位类型ID
+                                const typeId = seatTypeMap[seat.type_name];
+                                if (typeId !== undefined) {
+                                    const option = new Option(
+                                        `${seat.type_name} (¥${seat.price})`,  // 显示文本
+                                        typeId.toString()  // 使用映射的ID作为value
+                                    );
+                                    seatTypeSelect.add(option);
+                                } else {
+                                    console.warn('未知的座位类型:', seat.type_name);
+                                }
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('加载座位类型失败:', e);
+                    seatTypeSelect.innerHTML = '<option value="">加载失败</option>';
+                }
+            });
+        }
+        
+        // 查询余票
+        function searchTickets() {
+            const fromStation = document.getElementById('from-station').value;
+            const toStation = document.getElementById('to-station').value;
+            const departDate = document.getElementById('depart-date').value;
+            
+            // 验证输入
+            if (!fromStation || !toStation || !departDate) {
+                showMessage('error', '请填写所有查询条件');
+                return;
+            }
+            
+            if (fromStation === toStation) {
+                showMessage('error', '出发站和到达站不能相同');
+                return;
+            }
+            
+            clearMessages();
+            dom.loading.style.display = 'block';
+            
+            // 发送查询请求
+            fetch(`${API_BASE_URL}/api/query_tickets`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    depart_date: departDate,
+                    from_station: fromStation,
+                    to_station: toStation
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                dom.loading.style.display = 'none';
+                
+                if (data.success) {
+                    displayTickets(data.data);
+                } else {
+                    throw new Error(data.error || '查询失败');
+                }
+            })
+            .catch(error => {
+                dom.loading.style.display = 'none';
+                showMessage('error', '查询失败: ' + error.message);
+                console.error('查询错误:', error);
+            });
+        }
+        
+        // 显示余票结果
+        function displayTickets(tickets) {
+            const tbody = dom.resultsBody;
+            tbody.innerHTML = '';
+            
+            if (tickets.length === 0) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 8;
+                cell.textContent = '没有找到符合条件的余票';
+                row.appendChild(cell);
+                tbody.appendChild(row);
+                return;
+            }
+            
+            tickets.forEach(ticket => {
+                const row = document.createElement('tr');
+                
+                const cells = [
+                    ticket.TrainID,
+                    ticket.DepartureDate,
+                    ticket.TypeName,
+                    ticket.DepartureTime,
+                    ticket.ArrivalTime,
+                    ticket.AvailableCount,
+                    '¥' + ticket.Price.toFixed(2)
+                ];
+                
+                cells.forEach(text => {
+                    const cell = document.createElement('td');
+                    cell.textContent = text;
+                    row.appendChild(cell);
+                });
+                
+                // 添加订票按钮
+                const actionCell = document.createElement('td');
+                const bookBtn = document.createElement('button');
+                bookBtn.textContent = '订票';
+                bookBtn.className = 'secondary';
+                bookBtn.addEventListener('click', () => openBookModal(ticket));
+                actionCell.appendChild(bookBtn);
+                row.appendChild(actionCell);
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 打开订票模态框
+        function openBookModal(ticket) {
+            const modal = dom.bookModal;
+            document.getElementById('book-train-id').value = ticket.TrainID;
+            document.getElementById('book-depart-date').value = ticket.DepartureDate;
+            document.getElementById('book-seat-type-id').value = getSeatTypeId(ticket.TypeName);
+            document.getElementById('book-seat-type').value = ticket.TypeName;
+            document.getElementById('book-user-id').value = '';
+            document.getElementById('book-ticket-count').value = 1;
+            hideMessage('book-error');
+            hideMessage('book-success');
+            
+            modal.style.display = 'block';
+        }
+        
+        // 根据座位类型名称获取ID
+        function getSeatTypeId(typeName) {
+            const type = seatTypes.find(t => t.name === typeName);
+            return type ? type.id : null;
+        }
+        
+        // 创建订单
+        function createOrder() {
+            const trainId = document.getElementById('book-train-id').value;
+            const departDate = document.getElementById('book-depart-date').value;
+            const seatTypeId = document.getElementById('book-seat-type-id').value;
+            const userId = document.getElementById('book-user-id').value;
+            const ticketCount = document.getElementById('book-ticket-count').value;
+            
+            hideMessage('book-error');
+            hideMessage('book-success');
+            
+            fetch(`${API_BASE_URL}/api/create_order`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    train_id: trainId,
+                    depart_date: departDate,
+                    seat_type_id: seatTypeId,
+                    ticket_count: ticketCount
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showMessage('book-success', data.message);
+                    // 关闭模态框并刷新订单列表
+                    setTimeout(() => {
+                        dom.bookModal.style.display = 'none';
+                        if (currentUser) {
+                            fetchOrders(currentUser);
+                        }
+                    }, 1500);
+                } else {
+                    throw new Error(data.error || '创建订单失败');
+                }
+            })
+            .catch(error => {
+                showMessage('book-error', '创建订单失败: ' + error.message);
+                console.error('创建订单错误:', error);
+            });
+        }
+        
+        // 查询订单
+        function searchOrders() {
+            const userId = document.getElementById('user-id').value;
+            
+            if (!userId) {
+                showMessage('orders-error', '请输入用户ID');
+                return;
+            }
+            
+            currentUser = userId;
+            fetchOrders(userId);
+        }
+        
+        // 获取订单列表
+        function fetchOrders(userId) {
+            clearMessages('orders');
+            dom.ordersLoading.style.display = 'block';
+            
+            fetch(`${API_BASE_URL}/api/orders?user_id=${userId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    dom.ordersLoading.style.display = 'none';
+                    
+                    if (data.success) {
+                        displayOrders(data.data);
+                    } else {
+                        throw new Error(data.error || '获取订单失败');
+                    }
+                })
+                .catch(error => {
+                    dom.ordersLoading.style.display = 'none';
+                    showMessage('orders-error', '获取订单失败: ' + error.message);
+                    console.error('获取订单错误:', error);
+                });
+        }
+        
+        // 显示订单列表
+        function displayOrders(orders) {
+            const tbody = dom.ordersBody;
+            tbody.innerHTML = '';
+            
+            if (orders.length === 0) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 9;
+                cell.textContent = '没有找到订单记录';
+                row.appendChild(cell);
+                tbody.appendChild(row);
+                return;
+            }
+            
+            orders.forEach(order => {
+                const detail = order.details[0];
+                const row = document.createElement('tr');
+                
+                const cells = [
+                    order.order_id,
+                    order.order_time,
+                    detail.TrainID || '未知车次',
+                    detail.depart_date || '未知日期',
+                    detail.seat_type || getSeatTypeName(detail.SeatTypeID),
+                    detail.Quantity || 0,
+                    '¥' + (order.total_amount ? order.total_amount.toFixed(2) : '0.00'),
+                    order.status || '未知状态'
+                ];
+                
+                cells.forEach(text => {
+                    const cell = document.createElement('td');
+                    cell.textContent = text;
+                    row.appendChild(cell);
+                });
+                
+                // 添加操作按钮
+                const actionCell = document.createElement('td');
+                
+                // 取消订单按钮（仅对"待支付"订单显示）
+                if (order.status === '待支付') {
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.textContent = '取消';
+                    cancelBtn.className = 'secondary';
+                    cancelBtn.addEventListener('click', () => cancelOrder(order.order_id));
+                    actionCell.appendChild(cancelBtn);
+                }
+                
+                // 改签按钮（仅对"已支付"订单显示）
+                if (order.status === '已支付') {
+                    const changeBtn = document.createElement('button');
+                    changeBtn.textContent = '改签';
+                    changeBtn.className = 'secondary';
+                    changeBtn.addEventListener('click', () => openChangeModal(order));
+                    actionCell.appendChild(changeBtn);
+                }
+                
+                row.appendChild(actionCell);
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 打开改签模态框
+        function openChangeModal(order) {
+            const modal = dom.changeModal;
+            
+            // 重置表单
+            document.getElementById('change-form').reset();
+            
+            // 填充订单基本信息
+            document.getElementById('change-order-id').value = order.order_id;
+            
+            // 从订单详情获取默认值
+            const detail = order.details[0];
+            document.getElementById('change-from-station').value = detail.from_station;
+            document.getElementById('change-to-station').value = detail.to_station;
+            document.getElementById('change-depart-date').value = detail.depart_date;
+            document.getElementById('change-ticket-count').value = detail.quantity || 1;
+            
+            // 加载可用车次
+            loadAvailableTrains();
+            
+            hideMessage('change-error');
+            hideMessage('change-success');
+            
+            modal.style.display = 'block';
+        }
+
+        // 加载可用车次
+        function loadAvailableTrains() {
+            const fromStation = document.getElementById('change-from-station').value;
+            const toStation = document.getElementById('change-to-station').value;
+            const departDate = document.getElementById('change-depart-date').value;
+            
+            if (!fromStation || !toStation || !departDate) {
+                document.getElementById('new-train-select').innerHTML = 
+                    '<option value="">请先选择出发站/到达站/日期</option>';
+                return;
+            }
+
+            fetch(`${API_BASE_URL}/api/query_tickets`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    depart_date: departDate,
+                    from_station: fromStation,
+                    to_station: toStation
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('网络响应不正常');
+                return response.json();
+            })
+            .then(data => {
+                const select = document.getElementById('new-train-select');
+                select.innerHTML = '<option value="">选择新车次</option>';
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    // 创建一个对象来存储不同车次的信息
+                    const trains = {};
+                    
+                    // 处理返回的车票数据
+                    data.data.forEach(ticket => {
+                        if (!trains[ticket.TrainID]) {
+                            trains[ticket.TrainID] = {
+                                id: ticket.TrainID,
+                                depart_time: ticket.DepartureTime,
+                                seat_types: []
+                            };
+                        }
+                        // 添加座位类型信息
+                        trains[ticket.TrainID].seat_types.push({
+                            type_id: ticket.SeatTypeID,
+                            type_name: ticket.TypeName,
+                            price: ticket.Price,
+                            available: ticket.AvailableCount
+                        });
+                    });
+                    
+                    // 填充下拉选项
+                    Object.values(trains).forEach(train => {
+                        const option = document.createElement('option');
+                        option.value = train.id;
+                        option.textContent = `${train.id} (${train.depart_time}出发)`;
+                        option.dataset.train = JSON.stringify(train);
+                        select.appendChild(option);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">没有可用车次</option>';
+                }
+            })
+            .catch(error => {
+                console.error('加载车次失败:', error);
+                document.getElementById('new-train-select').innerHTML = 
+                    '<option value="">加载车次失败，请重试</option>';
+            });
+        }
+
+        // 取消订单
+        function cancelOrder(orderId) {
+            if (!confirm('确定要取消此订单吗？')) {
+                return;
+            }
+            
+            clearMessages('orders');
+            
+            fetch(`${API_BASE_URL}/api/cancel_order`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    order_id: orderId
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showMessage('orders-success', data.message);
+                    // 刷新订单列表
+                    if (currentUser) {
+                        fetchOrders(currentUser);
+                    }
+                } else {
+                    throw new Error(data.error || '取消订单失败');
+                }
+            })
+            .catch(error => {
+                showMessage('orders-error', '取消订单失败: ' + error.message);
+                console.error('取消订单错误:', error);
+            });
+        }
+        
+        // 改签车票
+        function changeTicket() {
+            const orderId = document.getElementById('change-order-id').value;
+            const newTrainId = document.getElementById('new-train-select').value;
+            const seatTypeSelect = document.getElementById('change-seat-type');
+            const selectedSeatOption = seatTypeSelect.options[seatTypeSelect.selectedIndex];
+            const newSeatTypeId = parseInt(selectedSeatOption.value);
+            const ticketCount = parseInt(document.getElementById('change-ticket-count').value);
+            const departDate = document.getElementById('change-depart-date').value;
+            
+            // 验证数据
+            if (!orderId || !newTrainId || isNaN(newSeatTypeId) || !ticketCount || !departDate) {
+                showMessage('change-error', '请填写所有必要信息');
+                return;
+            }
+            
+            // 打印调试信息
+            console.log('改签参数:', {
+                order_id: orderId,
+                new_train_id: newTrainId,
+                new_depart_date: departDate,
+                new_seat_type_id: newSeatTypeId,
+                new_ticket_count: ticketCount
+            });
+            
+            hideMessage('change-error');
+            hideMessage('change-success');
+            
+            fetch(`${API_BASE_URL}/api/change_ticket`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    new_train_id: newTrainId,
+                    new_depart_date: departDate,
+                    new_seat_type_id: newSeatTypeId,
+                    new_ticket_count: ticketCount
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showMessage('change-success', data.message);
+                    // 关闭模态框并刷新订单列表
+                    setTimeout(() => {
+                        dom.changeModal.style.display = 'none';
+                        if (currentUser) {
+                            fetchOrders(currentUser);
+                        }
+                    }, 1500);
+                } else {
+                    throw new Error(data.error || '改签失败');
+                }
+            })
+            .catch(error => {
+                showMessage('change-error', '改签失败: ' + error.message);
+                console.error('改签错误:', error);
+            });
+        }
+        
+        // 显示消息
+        function showMessage(type, message, prefix = '') {
+            const element = document.getElementById(`${prefix}${type}-message`);
+            if (element) {
+                element.textContent = message;
+                element.style.display = 'block';
+            }
+        }
+        
+        // 隐藏消息
+        function hideMessage(type, prefix = '') {
+            const element = document.getElementById(`${prefix}${type}-message`);
+            if (element) {
+                element.style.display = 'none';
+            }
+        }
+        
+        // 清空消息
+        function clearMessages(prefix = '') {
+            hideMessage('error', prefix);
+            hideMessage('success', prefix);
+        }
+    </script>
+</body>
+</html>
