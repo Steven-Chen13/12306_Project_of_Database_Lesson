@@ -44,7 +44,7 @@
    CALL QueryAvailableTickets('2025-04-05', '北京西站', '上海虹桥');
    ```
 
-   ![image-20250523194757881](.\image\image-20250523194757881.png)
+   ![image-20250523194757881](./image/image-20250523194757881.png)
 
 #### 数据插入：订票操作
 
@@ -106,11 +106,11 @@
       CALL Createorder(1, 'G101', '2025-04-05', 3, 2);
       ```
 
-      ![terminal](.\image\image-20250516012441439.png)
+      ![terminal](./image/image-20250516012441439.png)
 
-      ![order](.\image\image-20250516012422186.png)
+      ![order](./image/image-20250516012422186.png)
 
-      ![orderdetails](.\image\image-20250516012404068.png)
+      ![orderdetails](./image/image-20250516012404068.png)
 
    2. 余票不足时：
 
@@ -176,9 +176,9 @@
       CALL CancelOrder(6);
       ```
 
-      ![terminal](.\image\image-20250516012814356.png)
+      ![terminal](./image/image-20250516012814356.png)
 
-      ![order](.\image\image-20250516012657290.png)
+      ![order](./image/image-20250516012657290.png)
 
    2. 其他订单不可直接取消：
 
@@ -186,7 +186,7 @@
       CALL CancelOrder(1);
       ```
 
-      ![image-20250516012751672](.\image\image-20250516012751672.png)
+      ![image-20250516012751672](./image/image-20250516012751672.png)
 
 #### 数据修改：车票改签
 
@@ -253,11 +253,11 @@
       CALL ChangeTicket(3, 'G101', '2025-04-05', 2, 1);
       ```
 
-      ![terminal](.\image\image-20250516112440675.png)
+      ![terminal](./image/image-20250516112440675.png)
 
-      ![order](.\image\image-20250516112400892.png)
+      ![order](./image/image-20250516112400892.png)
 
-      ![orderdetails](.\image\image-20250516112422626.png)
+      ![orderdetails](./image/image-20250516112422626.png)
 
    2. 已完成订单和待支付订单无法改签
 
@@ -265,7 +265,7 @@
       CALL ChangeTicket(3, 'G101', '2025-04-05', 2, 2);
       ```
 
-      ![terminal](.\image\image-20250516012946855.png)
+      ![terminal](./image/image-20250516012946855.png)
 
 ### **（二）前端调用后台存储程序**
 
@@ -279,11 +279,11 @@
 
    - 使用`html`+`css`+`js`进行`b/s`架构的`test.html`前端搭建。
 
-2. 后端命令行：![image-20250525001944609](.\image\image-20250525001944609.png)
+2. 后端命令行：![image-20250525001944609](./image/image-20250525001944609.png)
 
-3. 前端余票查询界面：![image-20250525002037703](.\image\image-20250525002037703.png)
+3. 前端余票查询界面：![image-20250525002037703](./image/image-20250525002037703.png)
 
-   ![image-20250525002111704](.\image\image-20250525002111704.png)
+   ![image-20250525002111704](./image/image-20250525002111704.png)
 
 #### 余票查询 (`/api/query_tickets`)
 
@@ -342,11 +342,11 @@
 
    1. 后端界面
 
-      ![image-20250525003409729](.\image\image-20250525003409729.png)
+      ![image-20250525003409729](./image/image-20250525003409729.png)
 
    2. 前端界面
 
-      ![image-20250525003313843](.\image\image-20250525003313843.png)
+      ![image-20250525003313843](./image/image-20250525003313843.png)
 
 #### 订票操作 (`/api/create_order`)
 
@@ -415,13 +415,13 @@
 
    1. 后端界面
 
-      ![image-20250525003539788](.\image\image-20250525003539788.png)
+      ![image-20250525003539788](./image/image-20250525003539788.png)
 
    2. 前端界面
 
-      ![image-20250525003502791](.\image\image-20250525003502791.png)
+      ![image-20250525003502791](./image/image-20250525003502791.png)
 
-      ![image-20250525003612146](.\image\image-20250525003612146.png)
+      ![image-20250525003612146](./image/image-20250525003612146.png)
 
 #### 取消订单 (`/api/create_order`)
 
@@ -471,13 +471,13 @@
 
    1. 后端界面
 
-      ![image-20250525003856759](.\image\image-20250525003856759.png)
+      ![image-20250525003856759](./image/image-20250525003856759.png)
 
    2. 前端界面
 
-      ![image-20250525003718385](.\image\image-20250525003718385.png)
+      ![image-20250525003718385](./image/image-20250525003718385.png)
 
-      ![image-20250525003913900](.\image\image-20250525003913900.png)
+      ![image-20250525003913900](./image/image-20250525003913900.png)
 
 #### 车票改签 (`/api/create_order`)
 
@@ -548,11 +548,11 @@
 
    1. 后端界面
 
-      ![image-20250525004249430](.\image\image-20250525004249430.png)
+      ![image-20250525004249430](./image/image-20250525004249430.png)
 
    2. 前端界面
 
-      ![image-20250525004028151](.\image\image-20250525004028151.png)
+      ![image-20250525004028151](./image/image-20250525004028151.png)
 
 ### **（三）触发器**
 
@@ -581,7 +581,7 @@
    SELECT * FROM UserRegistrationLogs WHERE Username = 'trigger_test';
    ```
 
-   ![image-20250523185311581](.\image\image-20250523185311581.png)
+   ![image-20250523185311581](./image/image-20250523185311581.png)
 
 #### 数据更新：车次状态变更审计
 
@@ -610,7 +610,7 @@
    SELECT * FROM TrainStatusAudit WHERE TrainID = 'G201';
    ```
 
-   ![image-20250523185356862](.\image\image-20250523185356862.png)
+   ![image-20250523185356862](./image/image-20250523185356862.png)
 
 #### 数据删除：订单删除备份
 
@@ -638,7 +638,7 @@
    SELECT * FROM DeletedOrdersBackup WHERE OrderID = @test_order;
    ```
 
-   ![image-20250523185608835](.\image\image-20250523185608835.png)
+   ![image-20250523185608835](./image/image-20250523185608835.png)
 
 ------
 
@@ -743,7 +743,7 @@ def query_with_index(idcard, repeat=10):
 
 2. 根据表格数据画图：
 
-   ![index_performance_comparison_large](C:\Users\steven\Desktop\2025-2026春季学期\数据库\6-数据库第六次作业\index_performance_comparison_large.png)
+   ![index_performance_comparison_large](./image/index_performance_comparison_large.png)
 
 #### 结果分析
 
